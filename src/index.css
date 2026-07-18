@@ -1,0 +1,38 @@
+:root {
+  font-family: Inter, Aptos, "Segoe UI", Arial, sans-serif;
+  color: #17201f;
+  background: #f3f5f2;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --ink: #17201f;
+  --muted: #68716e;
+  --soft: #8b9490;
+  --line: #d9dfda;
+  --line-strong: #c8d0ca;
+  --surface: #ffffff;
+  --surface-alt: #f7f9f6;
+  --canvas: #f3f5f2;
+  --sidebar: #18211f;
+  --sidebar-soft: #9ba9a4;
+  --teal: #0f766e;
+  --teal-dark: #0a5a54;
+  --teal-light: #d9eeeb;
+  --coral: #d8644f;
+  --coral-light: #f8e4df;
+  --mustard: #c18b2f;
+  --mustard-light: #f5ead6;
+  --blue: #2d63a4;
+  --blue-light: #e0e9f4;
+  letter-spacing: 0;
+}
+
+* { box-sizing: border-box; }
+html { min-width: 320px; background: var(--canvas); }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, input, select, textarea { font: inherit; letter-spacing: 0; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { color: inherit; }
+a { color: inherit; }
+pre { font-family: "Cascadia Code", Consolas, monospace; }
+
