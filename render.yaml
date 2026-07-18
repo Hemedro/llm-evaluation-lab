@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: llm-evaluation-lab
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit

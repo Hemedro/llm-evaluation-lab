@@ -89,6 +89,12 @@ Open `http://127.0.0.1:4181`.
 
 For a persistent OpenRouter key, copy `backend/.env.example` to `backend/.env` and set `OPENROUTER_API_KEY`. The `.env` file is ignored by Git.
 
+## Deployment
+
+The root `Dockerfile` builds the React frontend and serves it from the FastAPI service. The included `render.yaml` can deploy the complete demo as one Render web service.
+
+The default hosted database path is ephemeral and is intended only for a portfolio demo. Use persistent storage or migrate SQLite to Postgres before relying on hosted experiment history.
+
 ## Verification
 
 ```powershell
