@@ -1,5 +1,7 @@
 # LLM Evaluation Lab
 
+[Open the live evaluation workspace](https://llm-evaluation-lab.onrender.com)
+
 A bilingual AI quality workspace for running repeatable LLM benchmarks, comparing models, reviewing failure modes, and calibrating automatic scores with human judgment.
 
 Built by Ahmed Elsaid as a portfolio proof for AI Quality, LLM Evaluation, and applied AI engineering roles.
