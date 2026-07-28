@@ -232,19 +232,32 @@ def init_database() -> None:
                 updated_at TEXT NOT NULL
             );
 
+            CREATE TABLE IF NOT EXISTS app_meta (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+
             CREATE INDEX IF NOT EXISTS idx_cases_dataset ON cases(dataset_id);
             CREATE INDEX IF NOT EXISTS idx_responses_experiment ON responses(experiment_id);
             CREATE INDEX IF NOT EXISTS idx_evaluations_response ON evaluations(response_id);
             """
         )
 
-        dataset_count = connection.execute("SELECT COUNT(*) FROM datasets").fetchone()[0]
-        if dataset_count == 0:
-            seed_dataset(connection)
-
-        experiment_count = connection.execute("SELECT COUNT(*) FROM experiments").fetchone()[0]
-        if experiment_count == 0:
-            seed_demo_experiment(connection)
+        # One-time migration: remove the original showcase samples from existing
+        # local and deployed databases, then leave the workspace user-owned.
+        reset_key = "blank_user_workspace_v1"
+        reset_done = connection.execute(
+            "SELECT 1 FROM app_meta WHERE key = ?", (reset_key,)
+        ).fetchone()
+        if not reset_done:
+            connection.execute("DELETE FROM evaluations")
+            connection.execute("DELETE FROM responses")
+            connection.execute("DELETE FROM experiments")
+            connection.execute("DELETE FROM cases")
+            connection.execute("DELETE FROM datasets")
+            connection.execute(
+                "INSERT INTO app_meta(key, value) VALUES (?, ?)", (reset_key, utc_now())
+            )
 
 
 def seed_dataset(connection: sqlite3.Connection) -> None:
@@ -475,6 +488,23 @@ class ExperimentCreate(BaseModel):
     api_key: str | None = Field(default=None, exclude=True)
 
 
+class DatasetCreate(BaseModel):
+    name: str = Field(min_length=3, max_length=100)
+    description: str = Field(default="", max_length=600)
+    language_mix: str = Field(default="Arabic / English", min_length=2, max_length=100)
+
+
+class CaseCreate(BaseModel):
+    title: str = Field(min_length=3, max_length=120)
+    prompt: str = Field(min_length=3, max_length=12000)
+    language: str = Field(default="English", min_length=2, max_length=80)
+    category: str = Field(default="General", min_length=2, max_length=80)
+    expected_behavior: str = Field(min_length=3, max_length=4000)
+    rubric: list[str] = Field(default_factory=lambda: list(DIMENSIONS))
+    required_terms: list[str] = Field(default_factory=list)
+    forbidden_terms: list[str] = Field(default_factory=list)
+
+
 class HumanReview(BaseModel):
     overall_score: float = Field(ge=0, le=100)
     dimensions: dict[str, float]
@@ -683,6 +713,20 @@ Candidate response:
     }
 
 
+def simulated_response(case: sqlite3.Row, model_index: int) -> str:
+    """Create generic calibration output without shipping stored benchmark samples."""
+    required = json_load(case["required_terms_json"], [])
+    forbidden = json_load(case["forbidden_terms_json"], [])
+    if model_index % 2 == 0:
+        signals = " ".join(required)
+        return " ".join(
+            part for part in (case["expected_behavior"].strip(), signals.strip()) if part
+        )
+    if forbidden:
+        return str(forbidden[0])
+    return "Incomplete simulated output for calibration."
+
+
 async def run_experiment(experiment_id: int, api_key: str | None) -> None:
     try:
         with db() as connection:
@@ -701,8 +745,7 @@ async def run_experiment(experiment_id: int, api_key: str | None) -> None:
             for model_index, model in enumerate(models):
                 request_failed = False
                 if experiment["mode"] == "demo":
-                    options = DEMO_RESPONSES.get(case["title"], ["Sample response", "Drifted response"])
-                    content = options[min(model_index % 2, len(options) - 1)]
+                    content = simulated_response(case, model_index)
                     model_result = {
                         "content": content,
                         "latency_ms": 560 + model_index * 250 + completed * 19,
@@ -926,6 +969,31 @@ def datasets() -> list[dict[str, Any]]:
     return [dict(row) for row in rows]
 
 
+@app.post("/api/datasets", status_code=201)
+def create_dataset(payload: DatasetCreate) -> dict[str, Any]:
+    with db() as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO datasets(name, description, language_mix, created_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                payload.name.strip(),
+                payload.description.strip(),
+                payload.language_mix.strip(),
+                utc_now(),
+            ),
+        )
+        row = connection.execute(
+            """
+            SELECT d.*, 0 AS case_count
+            FROM datasets d WHERE d.id = ?
+            """,
+            (cursor.lastrowid,),
+        ).fetchone()
+    return dict(row)
+
+
 @app.get("/api/datasets/{dataset_id}")
 def dataset_detail(dataset_id: int) -> dict[str, Any]:
     with db() as connection:
@@ -936,6 +1004,40 @@ def dataset_detail(dataset_id: int) -> dict[str, Any]:
     result = dict(dataset)
     result["cases"] = [case_to_dict(case) for case in cases]
     return result
+
+
+@app.post("/api/datasets/{dataset_id}/cases", status_code=201)
+def create_case(dataset_id: int, payload: CaseCreate) -> dict[str, Any]:
+    rubric = [item for item in payload.rubric if item in DIMENSIONS] or list(DIMENSIONS)
+    required_terms = [item.strip() for item in payload.required_terms if item.strip()]
+    forbidden_terms = [item.strip() for item in payload.forbidden_terms if item.strip()]
+    with db() as connection:
+        dataset = connection.execute(
+            "SELECT id FROM datasets WHERE id = ?", (dataset_id,)
+        ).fetchone()
+        if not dataset:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        cursor = connection.execute(
+            """
+            INSERT INTO cases(
+                dataset_id, title, prompt, language, category, expected_behavior,
+                rubric_json, required_terms_json, forbidden_terms_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                dataset_id,
+                payload.title.strip(),
+                payload.prompt.strip(),
+                payload.language.strip(),
+                payload.category.strip(),
+                payload.expected_behavior.strip(),
+                json.dumps(rubric),
+                json.dumps(required_terms, ensure_ascii=False),
+                json.dumps(forbidden_terms, ensure_ascii=False),
+            ),
+        )
+        row = connection.execute("SELECT * FROM cases WHERE id = ?", (cursor.lastrowid,)).fetchone()
+    return case_to_dict(row)
 
 
 @app.get("/api/experiments")

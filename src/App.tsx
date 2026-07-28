@@ -15,6 +15,7 @@ import {
   KeyRound,
   Menu,
   Play,
+  Plus,
   RefreshCw,
   Search,
   Server,
@@ -40,6 +41,8 @@ import { api } from './api'
 import type {
   Dataset,
   DatasetCase,
+  DatasetCaseCreate,
+  DatasetCreate,
   DimensionKey,
   Evaluation,
   ExperimentCreate,
@@ -199,8 +202,12 @@ function App() {
       setExperiments(experimentData)
       setJudgePresets(modelData.judge_presets)
       setModelCatalog(modelData.catalog)
-      setSelectedExperimentId((current) => current ?? experimentData[0]?.id ?? null)
-      setSelectedDatasetId((current) => current ?? datasetData[0]?.id ?? null)
+      setSelectedExperimentId((current) =>
+        experimentData.some((item) => item.id === current) ? current : experimentData[0]?.id ?? null,
+      )
+      setSelectedDatasetId((current) =>
+        datasetData.some((item) => item.id === current) ? current : datasetData[0]?.id ?? null,
+      )
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load the evaluation lab.')
     } finally {
@@ -241,7 +248,11 @@ function App() {
   }, [experiments, loadCore, loadExperiment, selectedExperimentId])
 
   useEffect(() => {
-    if (!selectedDatasetId) return
+    if (!selectedDatasetId) {
+      setDatasetDetail(null)
+      setSelectedCaseId(null)
+      return
+    }
     api.dataset(selectedDatasetId)
       .then((data) => {
         setDatasetDetail(data)
@@ -296,6 +307,15 @@ function App() {
     setNotice('Human review saved.')
     await Promise.all([loadReviews(), loadCore(true)])
     if (selectedExperimentId) await loadExperiment(selectedExperimentId)
+  }
+
+  const handleDatasetChanged = async (datasetId: number) => {
+    setSelectedDatasetId(datasetId)
+    await loadCore(true)
+    const data = await api.dataset(datasetId)
+    setDatasetDetail(data)
+    setSelectedCaseId(data.cases?.at(-1)?.id ?? null)
+    setNotice('Dataset saved.')
   }
 
   const pageTitle = NAV_ITEMS.find((item) => item.id === view)?.label ?? 'Overview'
@@ -356,7 +376,12 @@ function App() {
             <button className="icon-button" title="Refresh data" onClick={() => void loadCore(true)} disabled={refreshing}>
               <RefreshCw size={18} className={refreshing ? 'spin' : ''} />
             </button>
-            <button className="primary-button" onClick={() => setShowRunModal(true)}>
+            <button
+              className="primary-button"
+              disabled={!datasets.length}
+              title={datasets.length ? 'Run experiment' : 'Create a dataset first'}
+              onClick={() => setShowRunModal(true)}
+            >
               <Play size={16} fill="currentColor" />
               Run experiment
             </button>
@@ -412,6 +437,8 @@ function App() {
                   dataset={datasetDetail}
                   selectedCase={selectedCase}
                   onCase={setSelectedCaseId}
+                  onChanged={handleDatasetChanged}
+                  onError={setError}
                 />
               )}
             </>
@@ -816,6 +843,8 @@ function DatasetsView({
   dataset,
   selectedCase,
   onCase,
+  onChanged,
+  onError,
 }: {
   datasets: Dataset[]
   selectedDatasetId: number | null
@@ -823,22 +852,147 @@ function DatasetsView({
   dataset: Dataset | null
   selectedCase: DatasetCase | null
   onCase: (id: number) => void
+  onChanged: (datasetId: number) => Promise<void>
+  onError: (message: string) => void
 }) {
+  const [showDatasetForm, setShowDatasetForm] = useState(false)
+  const [showCaseForm, setShowCaseForm] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [datasetForm, setDatasetForm] = useState<DatasetCreate>({
+    name: '',
+    description: '',
+    language_mix: 'Arabic / English',
+  })
+  const [caseForm, setCaseForm] = useState<DatasetCaseCreate>({
+    title: '',
+    prompt: '',
+    language: 'English',
+    category: 'General',
+    expected_behavior: '',
+    rubric: DIMENSIONS.map((item) => item.key),
+    required_terms: [],
+    forbidden_terms: [],
+  })
+  const [requiredText, setRequiredText] = useState('')
+  const [forbiddenText, setForbiddenText] = useState('')
+
+  const saveDataset = async () => {
+    if (datasetForm.name.trim().length < 3) return
+    setSaving(true)
+    try {
+      const created = await api.createDataset(datasetForm)
+      setDatasetForm({ name: '', description: '', language_mix: 'Arabic / English' })
+      setShowDatasetForm(false)
+      await onChanged(created.id)
+    } catch (err) {
+      onError(err instanceof Error ? err.message : 'Could not create dataset.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const saveCase = async () => {
+    if (!selectedDatasetId || caseForm.title.trim().length < 3 || caseForm.prompt.trim().length < 3 || caseForm.expected_behavior.trim().length < 3) return
+    setSaving(true)
+    try {
+      await api.createCase(selectedDatasetId, {
+        ...caseForm,
+        required_terms: requiredText.split(',').map((item) => item.trim()).filter(Boolean),
+        forbidden_terms: forbiddenText.split(',').map((item) => item.trim()).filter(Boolean),
+      })
+      setCaseForm({
+        title: '',
+        prompt: '',
+        language: 'English',
+        category: 'General',
+        expected_behavior: '',
+        rubric: DIMENSIONS.map((item) => item.key),
+        required_terms: [],
+        forbidden_terms: [],
+      })
+      setRequiredText('')
+      setForbiddenText('')
+      setShowCaseForm(false)
+      await onChanged(selectedDatasetId)
+    } catch (err) {
+      onError(err instanceof Error ? err.message : 'Could not create evaluation case.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="dataset-view">
-      <section className="dataset-tabs">
-        {datasets.map((item) => (
-          <button key={item.id} className={selectedDatasetId === item.id ? 'dataset-active' : ''} onClick={() => onDataset(item.id)}>
-            <Database size={16} /><span>{item.name}</span><b>{item.case_count}</b>
-          </button>
-        ))}
+      <section className="dataset-toolbar">
+        <div className="dataset-tabs">
+          {datasets.map((item) => (
+            <button key={item.id} className={selectedDatasetId === item.id ? 'dataset-active' : ''} onClick={() => onDataset(item.id)}>
+              <Database size={16} /><span>{item.name}</span><b>{item.case_count}</b>
+            </button>
+          ))}
+        </div>
+        <button className="secondary-button" onClick={() => setShowDatasetForm((value) => !value)}>
+          <Plus size={16} />New dataset
+        </button>
       </section>
+      {showDatasetForm && (
+        <section className="panel data-entry-panel">
+          <div className="panel-heading compact-heading"><div><span>Workspace</span><h2>Create dataset</h2></div></div>
+          <div className="form-grid">
+            <label>Dataset name<input value={datasetForm.name} onChange={(event) => setDatasetForm({ ...datasetForm, name: event.target.value })} placeholder="Customer support benchmark" /></label>
+            <label>Language mix<input value={datasetForm.language_mix} onChange={(event) => setDatasetForm({ ...datasetForm, language_mix: event.target.value })} /></label>
+            <label className="field-full">Description<textarea value={datasetForm.description} onChange={(event) => setDatasetForm({ ...datasetForm, description: event.target.value })} placeholder="What this dataset is designed to evaluate" /></label>
+          </div>
+          <div className="editor-actions">
+            <button className="secondary-button" onClick={() => setShowDatasetForm(false)}>Cancel</button>
+            <button className="primary-button" disabled={saving || datasetForm.name.trim().length < 3} onClick={() => void saveDataset()}>{saving ? <RefreshCw size={16} className="spin" /> : <Plus size={16} />}Create dataset</button>
+          </div>
+        </section>
+      )}
+      {!datasets.length && !showDatasetForm && (
+        <section className="panel blank-workspace">
+          <Database size={24} />
+          <h2>Blank evaluation workspace</h2>
+          <p>Create a dataset, add your real evaluation cases, then run selected models through OpenRouter.</p>
+          <button className="primary-button" onClick={() => setShowDatasetForm(true)}><Plus size={16} />Create first dataset</button>
+        </section>
+      )}
       {dataset && (
         <section className="panel dataset-summary">
           <div><span className="eyebrow">Benchmark dataset</span><h2>{dataset.name}</h2><p>{dataset.description}</p></div>
-          <div className="dataset-facts"><span><Database size={15} />{dataset.cases?.length ?? 0} cases</span><span><ShieldCheck size={15} />{dataset.language_mix}</span></div>
+          <div className="dataset-summary-actions">
+            <div className="dataset-facts"><span><Database size={15} />{dataset.cases?.length ?? 0} cases</span><span><ShieldCheck size={15} />{dataset.language_mix}</span></div>
+            <button className="primary-button" onClick={() => setShowCaseForm((value) => !value)}><Plus size={16} />Add case</button>
+          </div>
         </section>
       )}
+      {showCaseForm && dataset && (
+        <section className="panel data-entry-panel">
+          <div className="panel-heading compact-heading"><div><span>{dataset.name}</span><h2>Add evaluation case</h2></div></div>
+          <div className="form-grid">
+            <label>Case title<input value={caseForm.title} onChange={(event) => setCaseForm({ ...caseForm, title: event.target.value })} /></label>
+            <label>Category<input value={caseForm.category} onChange={(event) => setCaseForm({ ...caseForm, category: event.target.value })} /></label>
+            <label>Language<input value={caseForm.language} onChange={(event) => setCaseForm({ ...caseForm, language: event.target.value })} /></label>
+            <label>Required terms<input value={requiredText} onChange={(event) => setRequiredText(event.target.value)} placeholder="Comma-separated" /></label>
+            <label className="field-full">Prompt<textarea value={caseForm.prompt} onChange={(event) => setCaseForm({ ...caseForm, prompt: event.target.value })} dir="auto" /></label>
+            <label className="field-full">Expected behavior<textarea value={caseForm.expected_behavior} onChange={(event) => setCaseForm({ ...caseForm, expected_behavior: event.target.value })} dir="auto" /></label>
+            <label className="field-full">Forbidden terms<input value={forbiddenText} onChange={(event) => setForbiddenText(event.target.value)} placeholder="Comma-separated" /></label>
+          </div>
+          <div className="editor-actions">
+            <span>Default rubric: instruction following, accuracy, relevance, language quality, safety</span>
+            <div><button className="secondary-button" onClick={() => setShowCaseForm(false)}>Cancel</button><button className="primary-button" disabled={saving || caseForm.title.trim().length < 3 || caseForm.prompt.trim().length < 3 || caseForm.expected_behavior.trim().length < 3} onClick={() => void saveCase()}>{saving ? <RefreshCw size={16} className="spin" /> : <Plus size={16} />}Add case</button></div>
+          </div>
+        </section>
+      )}
+      {dataset && !showCaseForm && !(dataset.cases?.length) && (
+        <section className="panel blank-workspace">
+          <ClipboardCheck size={24} />
+          <h2>No evaluation cases yet</h2>
+          <p>Add prompts, expected behavior, and optional required or forbidden signals.</p>
+          <button className="primary-button" onClick={() => setShowCaseForm(true)}><Plus size={16} />Add first case</button>
+        </section>
+      )}
+      {dataset && Boolean(dataset.cases?.length) && (
       <div className="dataset-grid">
         <section className="panel case-list">
           <div className="panel-heading compact-heading"><div><span>Coverage</span><h2>Evaluation cases</h2></div></div>
@@ -862,6 +1016,7 @@ function DatasetsView({
           </section>
         ) : <EmptyState label="Select an evaluation case" />}
       </div>
+      )}
     </div>
   )
 }

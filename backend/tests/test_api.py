@@ -21,15 +21,43 @@ def teardown_module():
     TEST_DATABASE.unlink(missing_ok=True)
 
 
-def test_health_and_seed_data():
+def create_test_dataset(client: TestClient) -> int:
+    dataset = client.post(
+        "/api/datasets",
+        json={
+            "name": "API test dataset",
+            "description": "User-owned test data.",
+            "language_mix": "Arabic / English",
+        },
+    )
+    assert dataset.status_code == 201
+    dataset_id = dataset.json()["id"]
+    for index in range(2):
+        case = client.post(
+            f"/api/datasets/{dataset_id}/cases",
+            json={
+                "title": f"Test case {index + 1}",
+                "prompt": f"Return item {index + 1}.",
+                "language": "English",
+                "category": "Testing",
+                "expected_behavior": f"Return item {index + 1}.",
+                "rubric": ["instruction_following", "accuracy"],
+                "required_terms": [f"item {index + 1}"],
+                "forbidden_terms": [],
+            },
+        )
+        assert case.status_code == 201
+    return dataset_id
+
+
+def test_health_and_blank_workspace():
     with TestClient(app) as client:
         health = client.get("/api/health")
         assert health.status_code == 200
         assert health.json()["status"] == "ok"
 
         datasets = client.get("/api/datasets").json()
-        assert len(datasets) == 1
-        assert datasets[0]["case_count"] == 8
+        assert datasets == []
 
 
 def test_openrouter_aliases_use_the_real_provider_name():
@@ -50,7 +78,7 @@ def test_judge_presets_have_unique_models_and_customizable_roles():
 
 def test_demo_experiment_and_human_review():
     with TestClient(app) as client:
-        dataset_id = client.get("/api/datasets").json()[0]["id"]
+        dataset_id = create_test_dataset(client)
         response = client.post(
             "/api/experiments",
             json={
@@ -64,10 +92,10 @@ def test_demo_experiment_and_human_review():
         assert response.status_code == 201
         experiment = response.json()
         assert experiment["status"] == "completed"
-        assert experiment["response_count"] == 16
+        assert experiment["response_count"] == 4
 
         detail = client.get(f"/api/experiments/{experiment['id']}").json()
-        assert len(detail["responses"]) == 16
+        assert len(detail["responses"]) == 4
         response_id = detail["responses"][0]["id"]
 
         review = client.post(
@@ -95,7 +123,8 @@ def test_demo_experiment_and_human_review():
 
 def test_live_run_rejects_secrets_and_malformed_model_ids():
     with TestClient(app) as client:
-        dataset_id = client.get("/api/datasets").json()[0]["id"]
+        datasets = client.get("/api/datasets").json()
+        dataset_id = datasets[0]["id"] if datasets else create_test_dataset(client)
         secret_as_model = client.post(
             "/api/experiments",
             json={

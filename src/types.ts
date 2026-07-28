@@ -56,6 +56,23 @@ export type Dataset = {
   cases?: DatasetCase[]
 }
 
+export type DatasetCreate = {
+  name: string
+  description: string
+  language_mix: string
+}
+
+export type DatasetCaseCreate = {
+  title: string
+  prompt: string
+  language: string
+  category: string
+  expected_behavior: string
+  rubric: string[]
+  required_terms: string[]
+  forbidden_terms: string[]
+}
+
 export type ExperimentSummary = {
   id: number
   name: string

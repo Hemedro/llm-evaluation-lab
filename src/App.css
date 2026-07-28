@@ -475,6 +475,8 @@ td small { margin-top: 3px; color: var(--soft); font-size: 9px; }
 .editor-actions > span { margin-right: auto; color: var(--muted); font-size: 10px; }
 
 .dataset-view { display: grid; gap: 14px; }
+.dataset-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dataset-toolbar .dataset-tabs { min-width: 0; flex: 1; }
 .dataset-tabs { display: flex; gap: 8px; overflow-x: auto; }
 .dataset-tabs button { min-height: 40px; padding: 0 11px; display: flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 5px; background: #fff; cursor: pointer; white-space: nowrap; font-size: 11px; }
 .dataset-tabs button b { min-width: 20px; height: 20px; display: grid; place-items: center; border-radius: 3px; background: #edf0ed; font-size: 9px; }
@@ -482,6 +484,7 @@ td small { margin-top: 3px; color: var(--soft); font-size: 9px; }
 .dataset-summary { min-height: 110px; padding: 18px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .dataset-summary h2 { margin: 6px 0; font-size: 19px; }
 .dataset-summary p { max-width: 760px; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.dataset-summary-actions { display: grid; justify-items: end; gap: 10px; }
 .dataset-facts { display: flex; gap: 8px; }
 .dataset-facts span { min-height: 31px; padding: 0 9px; display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-alt); color: var(--muted); white-space: nowrap; font-size: 9px; }
 .dataset-grid { display: grid; grid-template-columns: minmax(270px, 0.42fr) minmax(0, 1fr); gap: 14px; align-items: start; }
@@ -501,6 +504,12 @@ td small { margin-top: 3px; color: var(--soft); font-size: 9px; }
 .term-grid span { min-height: 25px; margin: 0 5px 5px 0; padding: 0 7px; display: inline-flex; align-items: center; border-radius: 4px; background: var(--teal-light); color: var(--teal-dark); font-size: 9px; }
 .term-grid > div:nth-child(2) span { color: #9b3d2c; background: var(--coral-light); }
 .term-grid small { color: var(--soft); font-size: 10px; }
+.blank-workspace { min-height: 280px; padding: 40px 24px; display: grid; place-items: center; align-content: center; gap: 10px; text-align: center; }
+.blank-workspace h2, .blank-workspace p { margin: 0; }
+.blank-workspace h2 { font-size: 18px; }
+.blank-workspace p { max-width: 520px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.data-entry-panel { overflow: hidden; }
+.data-entry-panel .editor-actions > div { display: flex; gap: 8px; }
 
 .modal-backdrop {
   position: fixed;
@@ -525,6 +534,7 @@ td small { margin-top: 3px; color: var(--soft); font-size: 9px; }
 .field-full { grid-column: 1 / -1; }
 input, select, textarea { outline: none; }
 .form-grid input, .form-grid select, .custom-model input, .api-key-field input { width: 100%; height: 37px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 5px; background: #fff; color: var(--ink); font-size: 11px; }
+.form-grid textarea { width: 100%; min-height: 86px; padding: 9px 10px; resize: vertical; border: 1px solid var(--line-strong); border-radius: 5px; background: #fff; color: var(--ink); font-size: 11px; line-height: 1.5; }
 input:focus, select:focus, textarea:focus { border-color: #6daea5 !important; box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1); }
 .judge-fieldset { margin: 0 18px 14px; padding: 12px; display: grid; gap: 9px; border: 1px solid var(--line); border-radius: 5px; }
 .judge-fieldset legend { padding: 0 5px; color: var(--muted); font-size: 9px; text-transform: uppercase; font-weight: 800; }

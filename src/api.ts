@@ -1,5 +1,8 @@
 import type {
   Dataset,
+  DatasetCase,
+  DatasetCaseCreate,
+  DatasetCreate,
   Evaluation,
   ExperimentCreate,
   ExperimentDetail,
@@ -45,6 +48,16 @@ export const api = {
   }>('/api/models'),
   datasets: () => request<Dataset[]>('/api/datasets'),
   dataset: (id: number) => request<Dataset>(`/api/datasets/${id}`),
+  createDataset: (payload: DatasetCreate) =>
+    request<Dataset>('/api/datasets', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  createCase: (datasetId: number, payload: DatasetCaseCreate) =>
+    request<DatasetCase>(`/api/datasets/${datasetId}/cases`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   experiments: () => request<ExperimentSummary[]>('/api/experiments'),
   experiment: (id: number) => request<ExperimentDetail>(`/api/experiments/${id}`),
   createExperiment: (payload: ExperimentCreate) =>

@@ -38,20 +38,16 @@ Judge selection includes five practical presets:
 
 Any model in the live catalogue can also be selected as a custom judge. The interface warns when a judge is also a candidate model or shares a provider with one. Automated judge scores should be calibrated against human reviews before they are treated as decision-grade measurements.
 
-## Benchmark coverage
+## User-owned benchmark data
 
-The included Arabic-English Reliability Pack tests:
+The workspace starts blank. Create a dataset in the **Datasets** view, then add real evaluation cases with:
 
-- strict JSON output contracts
-- exact-format Arabic instructions
-- UAE customer-service tone
-- safety boundaries
-- grounded answers from supplied context
-- noisy Arabic input
-- prompt-injection resistance
-- bilingual classification
+- prompt and expected behavior
+- language and category
+- rubric dimensions
+- optional required and forbidden signals
 
-All included cases and responses are synthetic. No Al Ameen, employer, customer, accounting, or confidential operational data is used.
+No employer, customer, accounting, or confidential operational data is bundled with the project. Simulation remains available for quick calibration checks; live runs use the models selected through OpenRouter.
 
 ## Architecture
 
@@ -109,6 +105,8 @@ pnpm build
 
 - `GET /api/overview`
 - `GET /api/datasets`
+- `POST /api/datasets`
+- `POST /api/datasets/{id}/cases`
 - `GET /api/experiments`
 - `POST /api/experiments`
 - `GET /api/experiments/{id}`
