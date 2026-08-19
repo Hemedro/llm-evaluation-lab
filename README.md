@@ -1,10 +1,21 @@
 # LLM Evaluation Lab
 
-[Open the live evaluation workspace](https://llm-evaluation-lab.onrender.com)
+<p>
+  <a href="https://llm-evaluation-lab.onrender.com"><img src="https://img.shields.io/badge/Live_Demo-Open_the_Lab-14b8a6?style=for-the-badge" alt="Open live demo" /></a>
+  <img src="https://img.shields.io/badge/React-TypeScript-3178C6?style=for-the-badge&logo=react" alt="React and TypeScript" />
+  <img src="https://img.shields.io/badge/FastAPI-Python-009688?style=for-the-badge&logo=fastapi" alt="FastAPI and Python" />
+  <img src="https://img.shields.io/badge/OpenRouter-Multi--model-111827?style=for-the-badge" alt="OpenRouter multi-model integration" />
+</p>
+
+<a href="https://llm-evaluation-lab.onrender.com">
+  <img src="docs/llm-evaluation-lab-preview.png" alt="LLM Evaluation Lab overview dashboard" width="100%" />
+</a>
+
+**[Open the live evaluation workspace →](https://llm-evaluation-lab.onrender.com)**
 
 A bilingual AI quality workspace for running repeatable LLM benchmarks, comparing models, reviewing failure modes, and calibrating automatic scores with human judgment.
 
-Built by Ahmed Elsaid as a portfolio proof for AI Quality, LLM Evaluation, and applied AI engineering roles.
+Created by Ahmed Elsaid as a portfolio proof for AI Quality, LLM Evaluation, and applied AI engineering roles.
 
 ## What it proves
 
@@ -15,6 +26,18 @@ Built by Ahmed Elsaid as a portfolio proof for AI Quality, LLM Evaluation, and a
 - Human-in-the-loop review and evaluator calibration
 - Failure taxonomy, latency, cost, and regression reporting
 - Secure live model access without storing the user's API key
+
+## My role and AI assistance
+
+I defined the product problem, benchmark workflow, data model, scoring dimensions, human-review loop, acceptance criteria, and deployment requirements. I used AI coding assistants heavily to generate and refine the implementation, then reviewed the structure, tested behavior, debugged failures, and iterated on the product.
+
+This repository is evidence of **AI-assisted product and engineering execution**. It is not presented as code written entirely from memory or without assistance.
+
+## Try it in three steps
+
+1. Create a small Arabic or English dataset with expected behavior.
+2. Choose simulation mode, or enter an OpenRouter key and select candidate models.
+3. Run the benchmark, inspect scores and failure modes, then add human reviews.
 
 ## Modes
 
@@ -92,6 +115,13 @@ For a persistent OpenRouter key, copy `backend/.env.example` to `backend/.env` a
 The root `Dockerfile` builds the React frontend and serves it from the FastAPI service. The included `render.yaml` can deploy the complete demo as one Render web service.
 
 The default hosted database path is ephemeral and is intended only for a portfolio demo. Use persistent storage or migrate SQLite to Postgres before relying on hosted experiment history.
+
+## Current limitations
+
+- Hosted experiment history is ephemeral on the current Render deployment.
+- Automatic judge scores are signals, not ground truth; they require human calibration.
+- OpenRouter model availability and pricing can change independently of this project.
+- This is a portfolio laboratory, not a production evaluation platform with authentication, teams, or persistent cloud storage.
 
 ## Verification
 

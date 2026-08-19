@@ -469,6 +469,8 @@ function OverviewView({ overview, onExperiment }: { overview: Overview; onExperi
   }))
   const failureData = overview.failure_taxonomy.length ? overview.failure_taxonomy : [{ tag: 'none', count: 0 }]
   const barColors = ['#d8644f', '#c18b2f', '#2d63a4', '#0f766e', '#74569a', '#66736e']
+  const calibration = overview.calibration
+  const metric = (value: number | null, suffix = '') => value === null ? '—' : `${value}${suffix}`
 
   return (
     <div className="view-stack">
@@ -493,6 +495,24 @@ function OverviewView({ overview, onExperiment }: { overview: Overview; onExperi
           <strong>{overview.case_count}</strong>
           <small>Arabic and English</small>
         </article>
+      </section>
+
+      <section className="panel calibration-panel" aria-label="Automatic judge calibration">
+        <div className="calibration-copy">
+          <span>Human calibration</span>
+          <h2>Does the automatic judge agree with Ahmed?</h2>
+          <p>
+            {calibration.sample_size
+              ? `Based on ${calibration.sample_size} response${calibration.sample_size === 1 ? '' : 's'} with both automatic and human scores.`
+              : 'Add human reviews to measure judge error, bias, and score agreement.'}
+          </p>
+        </div>
+        <div className="calibration-metrics">
+          <div><span>Within ±10</span><strong>{metric(calibration.within_10_points, '%')}</strong></div>
+          <div><span>Mean error</span><strong>{metric(calibration.mean_absolute_error)}</strong></div>
+          <div><span>Judge bias</span><strong>{calibration.mean_bias === null ? '—' : `${calibration.mean_bias > 0 ? '+' : ''}${calibration.mean_bias}`}</strong></div>
+          <div><span>Correlation</span><strong>{metric(calibration.correlation)}</strong></div>
+        </div>
       </section>
 
       <section className="analytics-grid">

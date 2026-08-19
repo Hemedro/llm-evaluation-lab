@@ -147,6 +147,13 @@ export type Overview = {
   human_review_count: number
   human_coverage: number
   average_score: number
+  calibration: {
+    sample_size: number
+    mean_absolute_error: number | null
+    mean_bias: number | null
+    within_10_points: number | null
+    correlation: number | null
+  }
   recent_experiments: ExperimentSummary[]
   failure_taxonomy: Array<{ tag: string; count: number }>
   openrouter_env_configured: boolean

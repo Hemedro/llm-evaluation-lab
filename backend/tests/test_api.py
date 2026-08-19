@@ -116,6 +116,15 @@ def test_demo_experiment_and_human_review():
         assert review.status_code == 200
         assert review.json()["overall_score"] == 91
 
+        overview = client.get("/api/overview")
+        assert overview.status_code == 200
+        calibration = overview.json()["calibration"]
+        automatic_score = detail["responses"][0]["automatic_evaluation"]["overall_score"]
+        assert calibration["sample_size"] == 1
+        assert calibration["mean_absolute_error"] == round(abs(automatic_score - 91), 1)
+        assert calibration["mean_bias"] == round(automatic_score - 91, 1)
+        assert calibration["correlation"] is None
+
         exported = client.get(f"/api/experiments/{experiment['id']}/export.csv")
         assert exported.status_code == 200
         assert "automatic_score" in exported.text

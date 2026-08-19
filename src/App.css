@@ -251,6 +251,17 @@ main { min-height: 100vh; margin-left: 224px; }
 .kpi-grid article strong { margin-top: auto; font-size: 28px; line-height: 1; }
 .kpi-grid article small { margin-top: 7px; color: var(--soft); font-size: 10px; }
 
+.calibration-panel { display: grid; grid-template-columns: minmax(260px, .9fr) minmax(440px, 1.1fr); align-items: stretch; overflow: hidden; }
+.calibration-copy { padding: 20px; border-right: 1px solid var(--line); background: #f8faf8; }
+.calibration-copy > span { color: var(--teal); font-size: 9px; text-transform: uppercase; font-weight: 800; }
+.calibration-copy h2 { margin: 7px 0 0; font-size: 16px; }
+.calibration-copy p { max-width: 520px; margin: 8px 0 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.calibration-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.calibration-metrics div { min-height: 108px; display: flex; flex-direction: column; justify-content: center; padding: 16px; border-right: 1px solid var(--line); }
+.calibration-metrics div:last-child { border-right: 0; }
+.calibration-metrics span { color: var(--muted); font-size: 9px; font-weight: 700; }
+.calibration-metrics strong { margin-top: 9px; color: var(--ink); font-size: 24px; font-variant-numeric: tabular-nums; }
+
 .analytics-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 12px; }
 .chart-panel { min-height: 310px; }
 .chart-wrap { height: 238px; padding: 14px 10px 8px; }
@@ -673,6 +684,8 @@ input:focus, select:focus, textarea:focus { border-color: #6daea5 !important; bo
 
 @media (max-width: 1120px) {
   .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .calibration-panel { grid-template-columns: 1fr; }
+  .calibration-copy { border-right: 0; border-bottom: 1px solid var(--line); }
   .analytics-grid { grid-template-columns: 1fr; }
   .review-layout { grid-template-columns: 250px minmax(0, 1fr); }
   .review-content-grid, .review-controls { grid-template-columns: 1fr; }
@@ -704,6 +717,9 @@ input:focus, select:focus, textarea:focus { border-color: #6daea5 !important; bo
   .kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .kpi-grid article { min-height: 112px; padding: 13px; }
   .kpi-grid article strong { font-size: 23px; }
+  .calibration-metrics { grid-template-columns: 1fr 1fr; }
+  .calibration-metrics div:nth-child(2) { border-right: 0; }
+  .calibration-metrics div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
   .analytics-grid, .view-stack, .detail-column { gap: 10px; }
   .chart-panel { min-height: 280px; }
   .chart-wrap { height: 212px; }
