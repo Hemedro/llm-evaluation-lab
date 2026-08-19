@@ -6,7 +6,6 @@
   <img src="https://img.shields.io/badge/FastAPI-Python-009688?style=for-the-badge&logo=fastapi" alt="FastAPI and Python" />
   <img src="https://img.shields.io/badge/OpenRouter-Multi--model-111827?style=for-the-badge" alt="OpenRouter multi-model integration" />
 </p>
-
 <a href="https://llm-evaluation-lab.onrender.com">
   <img src="docs/llm-evaluation-lab-preview.png" alt="LLM Evaluation Lab overview dashboard" width="100%" />
 </a>

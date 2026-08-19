@@ -4,6 +4,7 @@ import asyncio
 import csv
 import io
 import json
+import math
 import os
 import sqlite3
 import time
@@ -626,6 +627,60 @@ def insert_evaluation(
         (response_id, evaluator_type, *values[:-1], now, now),
     )
     return cursor.lastrowid
+
+
+def calibration_summary(connection: sqlite3.Connection) -> dict[str, Any]:
+    """Compare the latest automatic and human score for every reviewed response."""
+    rows = connection.execute(
+        """
+        SELECT automatic.overall_score AS automatic_score,
+               human.overall_score AS human_score
+        FROM responses r
+        JOIN evaluations automatic ON automatic.id = (
+            SELECT id FROM evaluations
+            WHERE response_id = r.id AND evaluator_type = 'automatic'
+            ORDER BY id DESC LIMIT 1
+        )
+        JOIN evaluations human ON human.id = (
+            SELECT id FROM evaluations
+            WHERE response_id = r.id AND evaluator_type = 'human'
+            ORDER BY id DESC LIMIT 1
+        )
+        """
+    ).fetchall()
+    if not rows:
+        return {
+            "sample_size": 0,
+            "mean_absolute_error": None,
+            "mean_bias": None,
+            "within_10_points": None,
+            "correlation": None,
+        }
+
+    automatic_scores = [float(row["automatic_score"]) for row in rows]
+    human_scores = [float(row["human_score"]) for row in rows]
+    differences = [automatic - human for automatic, human in zip(automatic_scores, human_scores)]
+    sample_size = len(rows)
+    automatic_mean = sum(automatic_scores) / sample_size
+    human_mean = sum(human_scores) / sample_size
+    covariance = sum(
+        (automatic - automatic_mean) * (human - human_mean)
+        for automatic, human in zip(automatic_scores, human_scores)
+    )
+    automatic_spread = sum((score - automatic_mean) ** 2 for score in automatic_scores)
+    human_spread = sum((score - human_mean) ** 2 for score in human_scores)
+    denominator = math.sqrt(automatic_spread * human_spread)
+
+    return {
+        "sample_size": sample_size,
+        "mean_absolute_error": round(sum(abs(value) for value in differences) / sample_size, 1),
+        "mean_bias": round(sum(differences) / sample_size, 1),
+        "within_10_points": round(
+            (sum(abs(value) <= 10 for value in differences) / sample_size) * 100,
+            1,
+        ),
+        "correlation": round(covariance / denominator, 3) if denominator else None,
+    }
 
 
 async def openrouter_completion(model: str, prompt: str, api_key: str) -> dict[str, Any]:
@@ -1289,6 +1344,7 @@ def overview() -> dict[str, Any]:
             "human_review_count": counts["human_count"],
             "human_coverage": round((counts["human_count"] / max(1, counts["response_count"])) * 100, 1),
             "average_score": round(counts["average_score"] or 0, 1),
+            "calibration": calibration_summary(connection),
             "recent_experiments": [experiment_summary(connection, row) for row in recent_rows],
             "failure_taxonomy": [
                 {"tag": tag, "count": count} for tag, count in failure_counter.most_common(8)
