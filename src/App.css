@@ -251,6 +251,13 @@ main { min-height: 100vh; margin-left: 224px; }
 .kpi-grid article strong { margin-top: auto; font-size: 28px; line-height: 1; }
 .kpi-grid article small { margin-top: 7px; color: var(--soft); font-size: 10px; }
 
+.guided-demo-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 28px; padding: 21px; border-color: #b8d9d2; background: linear-gradient(115deg, #f2faf8, #fffdf6); }
+.guided-demo-panel h2 { margin: 7px 0 0; color: var(--ink); font-size: 18px; }
+.guided-demo-panel p { max-width: 670px; margin: 8px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.guided-demo-actions { display: grid; justify-items: end; gap: 12px; }
+.guided-demo-steps { display: flex; gap: 8px; color: var(--teal); font-size: 9px; font-weight: 800; }
+.guided-demo-steps span { padding: 5px 7px; border-radius: 4px; background: var(--teal-light); }
+
 .calibration-panel { display: grid; grid-template-columns: minmax(260px, .9fr) minmax(440px, 1.1fr); align-items: stretch; overflow: hidden; }
 .calibration-copy { padding: 20px; border-right: 1px solid var(--line); background: #f8faf8; }
 .calibration-copy > span { color: var(--teal); font-size: 9px; text-transform: uppercase; font-weight: 800; }
@@ -684,6 +691,8 @@ input:focus, select:focus, textarea:focus { border-color: #6daea5 !important; bo
 
 @media (max-width: 1120px) {
   .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .guided-demo-panel { grid-template-columns: 1fr; }
+  .guided-demo-actions { justify-items: start; }
   .calibration-panel { grid-template-columns: 1fr; }
   .calibration-copy { border-right: 0; border-bottom: 1px solid var(--line); }
   .analytics-grid { grid-template-columns: 1fr; }
